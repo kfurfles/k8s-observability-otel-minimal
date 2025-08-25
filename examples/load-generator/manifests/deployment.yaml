@@ -1,0 +1,74 @@
+# =============================================================================
+# LOAD GENERATOR - KUBERNETES MANIFEST
+# Deploy: kubectl apply -f examples/load-generator/manifests/deployment.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# LOAD-GENERATOR
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: apps
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: load-generator:latest
+          imagePullPolicy: Never
+          ports:
+            - name: web
+              containerPort: 8888
+          env:
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: "http://otel-collector.observability.svc.cluster.local:4318/v1/metrics"
+            - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+              value: "http://otel-collector.observability.svc.cluster.local:4318/v1/logs"
+            - name: OTEL_LOG_LEVEL
+              value: DEBUG
+          command:
+            - locust
+            - -f
+            - locustfile.py
+            - --host
+            - http://instrumented-app.apps.svc.cluster.local:3333
+            - --web-host
+            - "0.0.0.0"
+            - --web-port
+            - "8888"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: load-generator
+  namespace: apps
+  labels:
+    app: load-generator
+spec:
+  selector:
+    app: load-generator
+  ports:
+    - name: web
+      port: 8888
+      targetPort: 8888
