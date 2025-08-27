@@ -163,11 +163,11 @@ histogram_quantile(0.95, sum by (endpoint, le) (rate(http_request_duration_secon
 **File:** `examples/instrumented-app/src/app.py`
 
 ```python
-# 1. Resource Configuration (lines 37-45)
+# 1. Resource Configuration (lines 43-51)
 resource = Resource.create({
-    "service.name": "test-app",
+    "service.name": "instrumented-app",
     "service.version": "1.2.0",
-    "service.instance.id": f"test-app-k8s-{random.randint(1000,9999)}",
+    "service.instance.id": f"instrumented-app-k8s-{random.randint(1000,9999)}",
     "deployment.environment.name": "kubernetes",
     # ... more attributes
 })
@@ -176,7 +176,7 @@ resource = Resource.create({
 **Learning Point:** Resources provide context about what is generating telemetry.
 
 ```python
-# 2. Auto-instrumentation (lines 89-90)
+# 2. Auto-instrumentation (lines 169-170)
 FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 ```
@@ -184,7 +184,7 @@ RequestsInstrumentor().instrument()
 **Learning Point:** Auto-instrumentation adds tracing to frameworks automatically.
 
 ```python
-# 3. Manual Spans (lines 99-109)
+# 3. Manual Spans (lines 186-196)
 with tracer.start_as_current_span("home_request") as span:
     span.set_attribute("http.method", "GET")
     span.set_attribute("http.route", "/")
@@ -194,7 +194,7 @@ with tracer.start_as_current_span("home_request") as span:
 **Learning Point:** Manual spans give you full control over what to trace.
 
 ```python
-# 4. Custom Metrics (lines 112-122)
+# 4. Custom Metrics (lines 139-153)
 request_counter.add(1, {
     "method": "GET",
     "endpoint": "/",
@@ -206,7 +206,7 @@ request_counter.add(1, {
 
 ### **OpenTelemetry Collector Configuration**
 
-**File:** `platform/manifests/all-in-one.yaml` (lines 26-104)
+**File:** `platform/manifests/all-in-one.yaml` (lines 26-128)
 
 ```yaml
 # Receivers - How telemetry enters the collector

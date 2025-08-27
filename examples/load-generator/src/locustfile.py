@@ -45,7 +45,7 @@ resource = Resource.create({
     "service.instance.id": f"load-generator-{random.randint(1000,9999)}",
     "service.namespace": "apps",
     "deployment.environment.name": "development",
-    "k8s.namespace.name": "observability",
+    "k8s.namespace.name": "apps",
     "k8s.pod.name": "load-generator-docker"
 })
 

@@ -289,7 +289,7 @@ def get_data():
             "db_query_time": db_time,
             "processing_time": processing_time,
             "total_time": total_time,
-            "service": "test-app"
+            "service": "instrumented-app"
         })
 
 @app.route("/api/checkout", methods=['POST'])
@@ -371,7 +371,7 @@ def checkout():
                 "currency": currency,
                 "payment_processing_time": payment_processing_time,
                 "total_processing_time": duration,
-                "service": "test-app"
+                "service": "instrumented-app"
             })
         else:
             error_types = [
@@ -467,7 +467,7 @@ def simulate_error():
             "error": error_msg,
             "error_type": "SimulatedError",
             "processing_time": processing_time,
-            "service": "test-app"
+            "service": "instrumented-app"
         }), 500
 
 @app.route("/health")

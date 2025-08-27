@@ -23,21 +23,23 @@ A **production-ready** yet **minimal** OpenTelemetry observability stack for Kub
 │               OPENTELEMETRY COLLECTOR                           │
 │                 (HPA: 2-5 replicas)                            │
 │                Load Balanced + Auto-scaling                     │
-└─────────────┬─────────────────────┬─────────────────────────────┘
-              │                     │
-              ▼                     ▼
-┌─────────────────────┐    ┌─────────────────────┐
-│     PROMETHEUS      │    │   GRAFANA TEMPO     │
-│   (StatefulSet 1x)  │    │   (Single Binary)   │
-│  + Persistent Vol   │    │ + MinIO Storage     │
-└─────────────────────┘    └─────────────────────┘
-              │                     │
-              └─────────┬───────────┘
+└─────┬─────────────────┬─────────────────────┬───────────────────┘
+      │                 │                     │
+      ▼                 ▼                     ▼
+┌─────────────┐ ┌─────────────────┐ ┌─────────────────────┐
+│ PROMETHEUS  │ │   GRAFANA LOKI  │ │   GRAFANA TEMPO     │
+│(StatefulSet)│ │ (Log Aggreg.)   │ │   (Tracing)         │
+│+ Persist.Vol│ │ + Persistent    │ │ + MinIO Storage     │
+└─────────────┘ └─────────────────┘ └─────────────────────┘
+      │                 │                     │
+      └─────────────────┼─────────────────────┘
                         ▼
               ┌─────────────────────┐
               │      GRAFANA        │
               │    (2 replicas)     │
               │  + Shared Storage   │
+              │ Traces + Metrics +  │
+              │        Logs         │
               └─────────────────────┘
 ```
 
@@ -49,14 +51,16 @@ A **production-ready** yet **minimal** OpenTelemetry observability stack for Kub
 | **Grafana Tempo** | Distributed tracing backend | 1 | 20Gi + MinIO | Block storage, S3 compatibility |
 | **Prometheus** | Metrics storage & querying | 1 | 50Gi | Metrics storage, 15-day retention |
 | **Grafana** | Unified observability dashboard | 2 | 10Gi shared | Multi-replica, shared persistence |
+| **Loki** | Log aggregation with trace correlation | 1 | 10Gi | Structured logs, trace correlation |
 | **MinIO** | S3-compatible object storage | 1 | 100Gi | Trace block storage, backup ready |
 
 ### **Data Flow**
-1. **Applications** → Send traces/metrics via OTLP
-2. **OTel Collector** → Routes traces to Tempo, metrics to Prometheus  
+1. **Applications** → Send traces/metrics/logs via OTLP
+2. **OTel Collector** → Routes traces to Tempo, metrics to Prometheus, logs to Loki  
 3. **Tempo** → Stores traces in MinIO with local WAL
 4. **Prometheus** → Stores metrics with persistent storage
-5. **Grafana** → Unified querying of traces (Tempo) and metrics (Prometheus)
+5. **Loki** → Stores structured logs with trace correlation
+6. **Grafana** → Unified querying of traces (Tempo), metrics (Prometheus), and logs (Loki)
 
 ## ⚡ **Production Features**
 
@@ -72,7 +76,7 @@ A **production-ready** yet **minimal** OpenTelemetry observability stack for Kub
 - **Uptime**: 99%+ availability target
 
 ### **Persistent Storage**
-- **Total allocation**: 180Gi across 4 persistent volumes
+- **Total allocation**: 190Gi across 5 persistent volumes
 - **Backup ready**: MinIO data can be backed up/restored
 - **Retention**: 15 days metrics, 24 hours trace blocks (configurable)
 
@@ -106,7 +110,7 @@ storageClassName: your-storage-class
 ```
 
 **What happens:**
-- Deploys 24 Kubernetes resources
+- Deploys 28 Kubernetes resources
 - Waits for all pods to be ready
 - Sets up auto-scaling (HPA) 
 - Configures port-forwards
@@ -277,7 +281,7 @@ kubectl exec -n observability grafana-xxx -- tar czf /tmp/grafana.tar.gz /var/li
 
 ## 📋 **Summary**
 
-**Total files**: 7 | **Total lines**: ~1,800 | **Deploy time**: < 2 minutes  
+**Total files**: 9 | **Total lines**: ~2,600 | **Deploy time**: < 2 minutes  
 **Production features**: Auto-scaling, persistence, monitoring  
 **Testing options**: Load testing | **Minimal complexity**: One command deploy
 
